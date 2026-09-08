@@ -52,7 +52,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 ## Video Demo
 
-[Link to 3-minute demo video - to be recorded]
+Link to 3-minute demo video - https://drive.google.com/file/d/15CJAcqGiCBGnbvpuEGk-zzfNIhl9aHGJ/view?usp=drive_link
 
 The demo covers:
 1. Uploading a PDF and watching facts get extracted in real time
