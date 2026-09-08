@@ -2,8 +2,7 @@
 Fact Knowledge Layer - Backend API
 FastAPI + Claude API for intelligent fact extraction and cross-document reasoning.
 """
-from dotenv import load_dotenv
-load_dotenv()
+
 import os
 import json
 import uuid
@@ -251,7 +250,7 @@ def cosine_sim(a: list[float], b: list[float]) -> float:
     return sum(x*y for x, y in zip(a, b))
 
 def find_similar_facts(new_fact_embedding: list[float], new_fact_type: str,
-                       existing_facts: list[dict], threshold: float = 0.35) -> list[dict]:
+                       existing_facts: list[dict], threshold: float = 0.25) -> list[dict]:
     """Find existing facts with similar embeddings and same/related type."""
     candidates = []
     for ef in existing_facts:
@@ -262,7 +261,7 @@ def find_similar_facts(new_fact_embedding: list[float], new_fact_type: str,
         if sim >= threshold:
             candidates.append({"fact": ef, "similarity": sim})
     candidates.sort(key=lambda x: -x["similarity"])
-    return candidates[:5]  # Top 5 candidates
+    return candidates[:2]  # Top 2 candidates for speed
 
 # ── API Routes ────────────────────────────────────────────────────────────────
 
@@ -296,7 +295,7 @@ async def upload_pdf(file: UploadFile = File(...)):
     # Extract facts chunk by chunk
     new_facts = []
     # Process up to 30 chunks to keep things fast (prioritize first + last sections)
-    selected_chunks = chunks[:15] + chunks[-15:] if len(chunks) > 30 else chunks
+    selected_chunks = chunks[:4] + chunks[-4:] if len(chunks) > 8 else chunks
     # Deduplicate by text hash
     seen = set()
     for chunk in selected_chunks:
