@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Fact Knowledge Layer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#070C19;--bg2:#0D1425;--bg3:#111929;
+  --panel:#131B2E;--panel2:#192236;
+  --border:rgba(59,130,246,0.12);--border2:rgba(59,130,246,0.22);
+  --blue:#3B82F6;--blue-dim:rgba(59,130,246,0.15);--blue-glow:rgba(59,130,246,0.06);
+  --green:#10B981;--green-dim:rgba(16,185,129,0.12);
+  --red:#F43F5E;--red-dim:rgba(244,63,94,0.12);
+  --amber:#F59E0B;--amber-dim:rgba(245,158,11,0.12);
+  --purple:#8B5CF6;--purple-dim:rgba(139,92,246,0.12);
+  --text:#CBD5E1;--text2:#94A3B8;--text3:#64748B;--white:#F1F5F9;
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh}
+.shell{display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:230px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;left:0;bottom:0;z-index:10}
+.logo{padding:20px 18px 16px;border-bottom:1px solid var(--border)}
+.logo-mark{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.logo-icon{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 0 18px rgba(59,130,246,0.45)}
+.logo-name{font-size:0.9rem;font-weight:700;color:var(--white);letter-spacing:-0.02em}
+.logo-sub{font-size:0.67rem;color:var(--text3);padding-left:42px;font-family:var(--mono)}
+.nav-sec{padding:12px 10px 4px}
+.nav-lbl{font-size:0.62rem;color:var(--text3);padding:0 10px 5px;letter-spacing:0.08em;font-weight:600;text-transform:uppercase}
+.nb{display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;background:none;border:none;border-radius:7px;color:var(--text2);font-size:0.82rem;font-family:var(--sans);cursor:pointer;transition:all 0.15s;text-align:left;margin-bottom:2px}
+.nb:hover{background:var(--blue-glow);color:var(--text)}
+.nb.on{background:var(--blue-dim);color:var(--blue);font-weight:500}
+.ni{font-size:0.9rem;width:18px;text-align:center}
+.nbadge{margin-left:auto;background:var(--panel2);color:var(--text3);font-size:0.64rem;padding:1px 6px;border-radius:99px;font-family:var(--mono)}
+.nb.on .nbadge{background:var(--blue-dim);color:var(--blue)}
+.sfooter{margin-top:auto;padding:14px 16px;border-top:1px solid var(--border)}
+.pdot{display:inline-block;width:7px;height:7px;background:var(--green);border-radius:50%;margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.sline{font-size:0.72rem;color:var(--text3)}
+
+/* MAIN */
+.main{margin-left:230px;flex:1;display:flex;flex-direction:column}
+.topbar{height:52px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:5}
+.ptitle{font-size:0.88rem;font-weight:600;color:var(--white)}
+.tstats{margin-left:auto;display:flex;gap:18px}
+.ts{font-family:var(--mono);font-size:0.7rem;color:var(--text3)}
+.ts span{color:var(--blue);font-weight:500}
+.content{padding:26px 28px;animation:fi 0.25s ease}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.page{display:none}.page.on{display:block}
+
+/* HEADINGS */
+.shead{margin-bottom:20px}
+.shead h2{font-size:1rem;font-weight:600;color:var(--white);margin-bottom:3px}
+.shead p{font-size:0.78rem;color:var(--text3)}
+
+/* STATS */
+.sgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:26px}
+.stile{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.stile .n{font-family:var(--mono);font-size:1.5rem;font-weight:500;color:var(--blue);line-height:1;margin-bottom:5px}
+.stile .l{font-size:0.7rem;color:var(--text3)}
+.stile.g .n{color:var(--green)}.stile.r .n{color:var(--red)}.stile.a .n{color:var(--amber)}
+
+/* UPLOAD */
+.uzone{background:var(--panel);border:1.5px dashed var(--border2);border-radius:14px;padding:44px 32px;text-align:center;cursor:pointer;transition:all 0.2s;position:relative}
+.uzone:hover,.uzone.drag{border-color:var(--blue);background:var(--blue-glow)}
+.uzone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.uiw{width:52px;height:52px;background:var(--blue-dim);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 14px}
+.uzone h3{font-size:0.93rem;font-weight:600;color:var(--white);margin-bottom:5px}
+.uzone p{font-size:0.77rem;color:var(--text3)}
+.pwrap{margin-top:18px}
+.phead{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:0.8rem;color:var(--text)}
+.pbar{height:3px;background:var(--panel2);border-radius:99px;overflow:hidden}
+.pfill{height:100%;background:var(--blue);border-radius:99px;transition:width 0.4s ease;box-shadow:0 0 8px rgba(59,130,246,0.5)}
+.ulog{margin-top:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.7rem;color:var(--text3);max-height:130px;overflow-y:auto;text-align:left}
+.ulog .ll{margin-bottom:3px}
+.ulog .ll::before{content:'> ';color:var(--blue)}
+.rbanner{margin-top:14px;padding:11px 15px;border-radius:10px;font-size:0.82rem}
+.rbanner.ok{background:var(--green-dim);border:1px solid rgba(16,185,129,0.25);color:var(--green)}
+.rbanner.er{background:var(--red-dim);border:1px solid rgba(244,63,94,0.25);color:var(--red)}
+.tbox{margin-top:22px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+.tbox h4{font-size:0.8rem;font-weight:600;color:var(--white);margin-bottom:10px}
+.trow{display:flex;gap:8px;margin-bottom:7px;align-items:flex-start}
+.tag{background:var(--blue-dim);color:var(--blue);font-size:0.67rem;font-family:var(--mono);padding:2px 7px;border-radius:4px;flex-shrink:0;margin-top:1px}
+.trow p{font-size:0.77rem;color:var(--text2);line-height:1.5}
+
+/* TABLE */
+.dtw{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead th{background:var(--panel2);padding:9px 16px;text-align:left;font-size:0.7rem;color:var(--text3);font-weight:500;border-bottom:1px solid var(--border);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.06em}
+tbody td{padding:10px 16px;font-size:0.81rem;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--blue-glow)}
+.dn{font-weight:500;color:var(--white)}
+.mv{font-family:var(--mono);color:var(--blue);font-size:0.77rem}
+
+/* FILTERS */
+.fbar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.sin{padding:7px 14px;background:var(--panel);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.81rem;font-family:var(--sans);width:230px;outline:none;transition:border-color 0.15s}
+.sin:focus{border-color:var(--blue)}
+.sin::placeholder{color:var(--text3)}
+.sel{padding:7px 12px;background:var(--panel);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.79rem;font-family:var(--sans);outline:none;cursor:pointer}
+.chip{padding:5px 13px;border-radius:99px;border:1px solid var(--border);background:var(--panel);color:var(--text3);font-size:0.74rem;cursor:pointer;transition:all 0.15s;font-family:var(--sans)}
+.chip:hover{border-color:var(--blue);color:var(--text)}
+.chip.on{border-color:var(--blue);background:var(--blue-dim);color:var(--blue);font-weight:500}
+.chip.cg.on{border-color:var(--green);background:var(--green-dim);color:var(--green)}
+.chip.cr.on{border-color:var(--red);background:var(--red-dim);color:var(--red)}
+.chip.ca.on{border-color:var(--amber);background:var(--amber-dim);color:var(--amber)}
+
+/* FACT CARD */
+.fc{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:10px;transition:border-color 0.15s}
+.fc:hover{border-color:var(--border2)}
+.fctop{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:9px}
+.fctxt{font-size:0.87rem;font-weight:500;color:var(--white);flex:1;line-height:1.5}
+.tp{display:inline-flex;align-items:center;padding:3px 9px;border-radius:6px;font-size:0.67rem;font-family:var(--mono);font-weight:500;flex-shrink:0}
+.tpb{background:var(--blue-dim);color:var(--blue)}
+.tpg{background:var(--green-dim);color:var(--green)}
+.tpr{background:var(--red-dim);color:var(--red)}
+.tpa{background:var(--amber-dim);color:var(--amber)}
+.tpp{background:var(--purple-dim);color:var(--purple)}
+.fcmeta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:9px}
+.mc{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;font-size:0.7rem;font-family:var(--mono);background:var(--panel2);color:var(--text2);border:1px solid var(--border)}
+.mc.val{color:var(--green);border-color:rgba(16,185,129,0.2);background:var(--green-dim)}
+.mc.per{color:var(--blue);border-color:rgba(59,130,246,0.2);background:var(--blue-dim)}
+.fcsrc{background:var(--bg);border-left:2px solid var(--border2);padding:8px 12px;border-radius:0 6px 6px 0;font-family:var(--mono);font-size:0.71rem;color:var(--text3);line-height:1.6;margin-bottom:9px}
+.cbar{display:flex;align-items:center;gap:8px;font-size:0.69rem;color:var(--text3)}
+.ctrack{height:3px;width:60px;background:var(--panel2);border-radius:99px;overflow:hidden}
+.cfill{height:100%;background:var(--green);border-radius:99px}
+
+/* REL CARD */
+.rc{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:12px;transition:border-color 0.15s}
+.rc:hover{border-color:var(--border2)}
+.rch{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.rbdg{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:99px;font-size:0.74rem;font-weight:600}
+.rbg{background:var(--green-dim);color:var(--green);border:1px solid rgba(16,185,129,0.3)}
+.rbr{background:var(--red-dim);color:var(--red);border:1px solid rgba(244,63,94,0.3)}
+.rbb{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(59,130,246,0.3)}
+.rba{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,158,11,0.3)}
+.rcc{font-size:0.7rem;color:var(--text3);font-family:var(--mono);margin-left:auto}
+.dossier{display:grid;grid-template-columns:1fr 28px 1fr;gap:0;margin-bottom:14px}
+.ddiv{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.dvs{width:22px;height:22px;background:var(--panel2);border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.58rem;color:var(--text3);font-family:var(--mono)}
+.dbox{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:13px 14px}
+.dlbl{font-size:0.66rem;color:var(--text3);font-family:var(--mono);margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.ddot{width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0}
+.dtxt{font-size:0.84rem;color:var(--white);font-weight:500;margin-bottom:5px;line-height:1.4}
+.dval{font-family:var(--mono);font-size:0.74rem;color:var(--green);margin-bottom:7px}
+.dsrc{font-family:var(--mono);font-size:0.67rem;color:var(--text3);border-top:1px solid var(--border);padding-top:7px;line-height:1.5}
+.rbox{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 14px;font-size:0.79rem;color:var(--text);line-height:1.65}
+.rlbl{font-size:0.65rem;font-family:var(--mono);color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em}
+
+/* CASES */
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ccard{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden}
+.ccard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.c1::before{background:var(--green)}.c2::before{background:var(--red)}
+.c3::before{background:var(--blue)}.c4::before{background:var(--amber)}
+.cnum{font-family:var(--mono);font-size:0.64rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:7px}
+.c1 .cnum{color:var(--green)}.c2 .cnum{color:var(--red)}.c3 .cnum{color:var(--blue)}.c4 .cnum{color:var(--amber)}
+.ctitle{font-size:0.93rem;font-weight:600;color:var(--white);margin-bottom:7px}
+.cdesc{font-size:0.77rem;color:var(--text3);line-height:1.6;margin-bottom:14px}
+.evb{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:13px 14px;font-size:0.78rem}
+.erow{margin-bottom:10px}
+.erow:last-child{margin-bottom:0}
+.edoc{font-family:var(--mono);font-size:0.64rem;color:var(--text3);margin-bottom:3px}
+.efact{color:var(--white);font-weight:500;margin-bottom:3px}
+.eval{font-family:var(--mono);font-size:0.71rem;color:var(--green);margin-bottom:4px}
+.esrc{font-family:var(--mono);font-size:0.66rem;color:var(--text3);line-height:1.5;border-left:2px solid var(--border2);padding-left:8px}
+.esep{height:1px;background:var(--border);margin:10px 0}
+.ereason{font-size:0.75rem;color:var(--text2);line-height:1.6;padding-top:8px;border-top:1px solid var(--border);margin-top:8px}
+
+/* MISC */
+.empty{text-align:center;padding:52px 24px;color:var(--text3)}
+.empty .ei{font-size:2rem;margin-bottom:12px;opacity:0.35}
+.empty h3{font-size:0.88rem;color:var(--text2);margin-bottom:5px}
+.empty p{font-size:0.77rem}
+.cnt{font-size:0.71rem;color:var(--text3);font-family:var(--mono);margin-bottom:13px}
+.spin{display:inline-block;animation:rot 0.9s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">
+      <div class="logo-icon">🧠</div>
+      <div class="logo-name">FactLayer</div>
+    </div>
+    <div class="logo-sub">knowledge extraction v1.0</div>
+  </div>
+
+  <div class="nav-sec">
+    <div class="nav-lbl">Workspace</div>
+    <button class="nb on" onclick="nav('upload',this)"><span class="ni">📤</span>Upload PDF</button>
+    <button class="nb" onclick="nav('documents',this)"><span class="ni">📁</span>Documents<span class="nbadge" id="nb-d">0</span></button>
+  </div>
+  <div class="nav-sec">
+    <div class="nav-lbl">Knowledge</div>
+    <button class="nb" onclick="nav('facts',this)"><span class="ni">🔍</span>Facts<span class="nbadge" id="nb-f">0</span></button>
+    <button class="nb" onclick="nav('relationships',this)"><span class="ni">🔗</span>Relationships<span class="nbadge" id="nb-r">0</span></button>
+  </div>
+  <div class="nav-sec">
+    <div class="nav-lbl">Submission</div>
+    <button class="nb" onclick="nav('cases',this)"><span class="ni">🎯</span>4 Key Cases</button>
+  </div>
+
+  <div class="sfooter">
+    <div class="sline"><span class="pdot"></span>API connected</div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="ptitle" id="ptitle">Upload PDF</div>
+    <div class="tstats">
+      <div class="ts">Docs: <span id="ts-d">0</span></div>
+      <div class="ts">Facts: <span id="ts-f">0</span></div>
+      <div class="ts">Links: <span id="ts-r">0</span></div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- UPLOAD -->
+    <div class="page on" id="page-upload">
+      <div class="shead"><h2>Process a Document</h2><p>Upload any PDF. Facts are extracted, grounded to source evidence, and cross-referenced automatically.</p></div>
+      <div class="uzone" id="dz" onclick="document.getElementById('fi').click()">
+        <input type="file" id="fi" accept=".pdf" onchange="handleFile(this.files[0])"/>
+        <div class="uiw">📄</div>
+        <h3>Drop a PDF here or click to browse</h3>
+        <p>No configuration needed. Extraction runs automatically.</p>
+      </div>
+      <div id="pw" style="display:none" class="pwrap">
+        <div class="phead"><span class="spin">⚙</span><span id="pl">Processing...</span></div>
+        <div class="pbar"><div class="pfill" id="pf" style="width:0%"></div></div>
+        <div class="ulog" id="ul"></div>
+      </div>
+      <div id="ur"></div>
+      <div class="tbox">
+        <h4>Starter Datasets</h4>
+        <div class="trow"><div class="tag">Delhivery</div><p>Prospectus 2022, Annual Report FY24, Q4 FY24 Earnings Presentation. Financial metrics, headcount, leadership data.</p></div>
+        <div class="trow"><div class="tag">India Macro</div><p>Economic Survey 2024-25, RBI Annual Report 2024-25, IMF Article IV 2025. GDP, inflation, policy rates across three authoritative sources.</p></div>
+      </div>
+    </div>
+
+    <!-- DOCUMENTS -->
+    <div class="page" id="page-documents">
+      <div class="shead"><h2>Indexed Documents</h2><p>All PDFs processed by the system.</p></div>
+      <div id="dc"><div class="empty"><div class="ei">📁</div><h3>No documents yet</h3><p>Upload a PDF to get started.</p></div></div>
+    </div>
+
+    <!-- FACTS -->
+    <div class="page" id="page-facts">
+      <div class="shead"><h2>Extracted Facts</h2><p>Every fact is grounded to its exact source sentence in the original document.</p></div>
+      <div class="fbar">
+        <input class="sin" id="fq" placeholder="Search facts..." oninput="renderFacts()"/>
+        <select class="sel" id="ftype" onchange="renderFacts()">
+          <option value="">All types</option>
+          <option value="revenue">revenue</option><option value="growth_rate">growth_rate</option>
+          <option value="gdp">gdp</option><option value="inflation">inflation</option>
+          <option value="headcount">headcount</option><option value="operational_metric">operational_metric</option>
+          <option value="policy_rate">policy_rate</option><option value="leadership">leadership</option>
+          <option value="financial_metric">financial_metric</option><option value="date">date</option>
+        </select>
+        <select class="sel" id="fdoc" onchange="renderFacts()">
+          <option value="">All documents</option>
+        </select>
+      </div>
+      <div id="fc"><div class="empty"><div class="ei">🔍</div><h3>No facts yet</h3><p>Upload PDFs to extract facts.</p></div></div>
+    </div>
+
+    <!-- RELATIONSHIPS -->
+    <div class="page" id="page-relationships">
+      <div class="shead"><h2>Cross-Document Relationships</h2><p>Facts compared and reasoned about across all indexed documents.</p></div>
+      <div class="fbar">
+        <button class="chip on" onclick="rf('',this)">All</button>
+        <button class="chip cg" onclick="rf('CORROBORATES',this)">✅ Corroborates</button>
+        <button class="chip cr" onclick="rf('CONTRADICTS',this)">❌ Contradicts</button>
+        <button class="chip ca" onclick="rf('RECONCILED',this)">🔄 Reconciled</button>
+      </div>
+      <div id="rc"><div class="empty"><div class="ei">🔗</div><h3>No relationships yet</h3><p>Upload multiple PDFs on overlapping topics.</p></div></div>
+    </div>
+
+    <!-- FOUR CASES -->
+    <div class="page" id="page-cases">
+      <div class="shead"><h2>The Four Required Cases</h2><p>Live examples pulled from the knowledge layer after uploading the starter datasets.</p></div>
+      <div class="cgrid" id="cg">
+        <div class="empty" style="grid-column:1/-1"><div class="ei">🎯</div><h3>Upload documents first</h3><p>Cases populate automatically from cross-document analysis.</p></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+const API='http://localhost:8000';
+let aF=[],aR=[],aD=[],cRF='';
+
+const pTitles={upload:'Upload PDF',documents:'Documents',facts:'Facts',relationships:'Relationships',cases:'4 Key Cases'};
+
+function nav(page,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
+  document.getElementById('page-'+page).classList.add('on');
+  btn.classList.add('on');
+  document.getElementById('ptitle').textContent=pTitles[page];
+  if(page==='documents')loadDocs();
+  if(page==='facts')loadFacts();
+  if(page==='relationships')loadRels();
+  if(page==='cases')loadCases();
+}
+
+async function refreshStats(){
+  try{
+    const s=await fetch(`${API}/stats`).then(r=>r.json());
+    ['d','f','r'].forEach((k,i)=>{
+      const v=[s.documents,s.facts,s.relationships][i];
+      document.getElementById('ts-'+k).textContent=v;
+      document.getElementById('nb-'+k).textContent=v;
+    });
+  }catch(e){}
+}
+
+// UPLOAD
+const dz=document.getElementById('dz');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');handleFile(e.dataTransfer.files[0])});
+
+function ulog(m){const el=document.getElementById('ul');const d=document.createElement('div');d.className='ll';d.textContent=m;el.appendChild(d);el.scrollTop=el.scrollHeight}
+function setP(p,l){document.getElementById('pf').style.width=p+'%';document.getElementById('pl').textContent=l}
+const delay=ms=>new Promise(r=>setTimeout(r,ms));
+
+async function handleFile(file){
+  if(!file||!file.name.endsWith('.pdf'))return;
+  document.getElementById('pw').style.display='block';
+  document.getElementById('ur').innerHTML='';
+  document.getElementById('ul').innerHTML='';
+  setP(5,`Uploading ${file.name}...`);
+  ulog(`File: ${file.name} (${(file.size/1024).toFixed(1)} KB)`);
+  const fd=new FormData();fd.append('file',file);
+  try{
+    setP(20,'Parsing PDF pages...');ulog('Extracting text chunks...');
+    await delay(400);
+    setP(38,'Running fact extraction with LLM...');ulog('LLM identifying facts in each chunk...');
+    const r=await fetch(`${API}/upload`,{method:'POST',body:fd});
+    setP(78,'Cross-referencing with existing facts...');ulog('Comparing against knowledge layer...');
+    await delay(300);
+    const data=await r.json();setP(100,'Done!');
+    if(r.ok){
+      ulog(`Extracted ${data.facts_extracted} facts from ${data.chunks_processed} chunks.`);
+      ulog(`Found ${data.relationships_found} new cross-document relationships.`);
+      document.getElementById('ur').innerHTML=`<div class="rbanner ok">✅ <strong>${data.filename}</strong> — ${data.facts_extracted} facts · ${data.relationships_found} relationships · ${data.page_count} pages</div>`;
+      refreshStats();
+    }else throw new Error(data.detail||'Upload failed');
+  }catch(e){
+    setP(0,'Error');
+    document.getElementById('ur').innerHTML=`<div class="rbanner er">❌ ${e.message}</div>`;
+    ulog(`Error: ${e.message}`);
+  }
+  document.getElementById('fi').value='';
+}
+
+// DOCUMENTS
+async function loadDocs(){
+  aD=await fetch(`${API}/documents`).then(r=>r.json());
+  const el=document.getElementById('dc');
+  if(!aD.length){el.innerHTML=empty('📁','No documents yet','Upload a PDF to get started.');return}
+  el.innerHTML=`<div class="dtw"><table><thead><tr><th>Filename</th><th>Pages</th><th>Facts</th><th>Uploaded</th></tr></thead><tbody>${aD.map(d=>`<tr><td><span class="dn">${d.filename}</span></td><td><span class="mv">${d.page_count||'-'}</span></td><td><span class="mv">${d.fact_count}</span></td><td style="color:var(--text3);font-size:0.73rem;font-family:var(--mono)">${new Date(d.uploaded_at).toLocaleString()}</td></tr>`).join('')}</tbody></table></div>`;
+  const df=document.getElementById('fdoc');
+  df.innerHTML='<option value="">All documents</option>'+aD.map(d=>`<option value="${d.id}">${d.filename}</option>`).join('');
+}
+
+// FACTS
+const tpMap={revenue:'tpg',growth_rate:'tpb',gdp:'tpp',inflation:'tpa',headcount:'tpa',policy_rate:'tpb',operational_metric:'tpb',leadership:'tpa',financial_metric:'tpg',date:'tpa',market_share:'tpg',other:'tpb'};
+
+function factCard(f){
+  const conf=Math.round((f.confidence||0.8)*100);
+  const val=[f.value,f.unit].filter(Boolean).join(' ');
+  return `<div class="fc">
+    <div class="fctop">
+      <div class="fctxt">${f.fact_text}</div>
+      <div class="tp ${tpMap[f.fact_type]||'tpb'}">${f.fact_type||'other'}</div>
+    </div>
+    <div class="fcmeta">
+      ${val?`<div class="mc val">📊 ${val}</div>`:''}
+      ${f.time_period?`<div class="mc per">📅 ${f.time_period}</div>`:''}
+      <div class="mc">📄 ${f.filename||''}</div>
+      <div class="mc">p.${f.source_page}</div>
+    </div>
+    ${f.source_sentence?`<div class="fcsrc">"${f.source_sentence.substring(0,210)}${f.source_sentence.length>210?'…':''}"</div>`:''}
+    <div class="cbar">Confidence<div class="ctrack"><div class="cfill" style="width:${conf}%"></div></div><span style="font-family:var(--mono);font-size:0.67rem;color:var(--text3)">${conf}%</span></div>
+  </div>`;
+}
+
+async function loadFacts(){
+  aF=await fetch(`${API}/facts?limit=300`).then(r=>r.json());
+  renderFacts();
+}
+function renderFacts(){
+  const q=document.getElementById('fq').value.toLowerCase();
+  const type=document.getElementById('ftype').value;
+  const doc=document.getElementById('fdoc').value;
+  const f=aF.filter(x=>(!q||x.fact_text.toLowerCase().includes(q)||(x.source_sentence||'').toLowerCase().includes(q))&&(!type||x.fact_type===type)&&(!doc||x.doc_id===doc));
+  const el=document.getElementById('fc');
+  if(!f.length){el.innerHTML=empty('🔍','No matches','Adjust your filters.');return}
+  el.innerHTML=`<div class="cnt">${f.length} facts</div>`+f.map(factCard).join('');
+}
+
+// RELATIONSHIPS
+const rCfg={
+  CORROBORATES:{cls:'rbg',icon:'✅',lbl:'Corroborates'},
+  CONTRADICTS:{cls:'rbr',icon:'❌',lbl:'Contradicts'},
+  RECONCILED:{cls:'rbb',icon:'🔄',lbl:'Reconciled by context'},
+  UNCERTAIN:{cls:'rba',icon:'❓',lbl:'Uncertain'},
+};
+function relCard(r){
+  const cfg=rCfg[r.relationship]||rCfg.UNCERTAIN;
+  const av=[r.fact_a_value,r.fact_a_unit].filter(Boolean).join(' ');
+  const bv=[r.fact_b_value,r.fact_b_unit].filter(Boolean).join(' ');
+  return `<div class="rc">
+    <div class="rch">
+      <div class="rbdg ${cfg.cls}">${cfg.icon} ${cfg.lbl}</div>
+      <div class="rcc">conf: ${(r.confidence*100).toFixed(0)}%</div>
+    </div>
+    <div class="dossier">
+      <div class="dbox">
+        <div class="dlbl"><div class="ddot"></div>${r.doc_a}</div>
+        <div class="dtxt">${r.fact_a_text}</div>
+        ${av?`<div class="dval">${av}${r.fact_a_period?' · '+r.fact_a_period:''}</div>`:''}
+        ${r.fact_a_sentence?`<div class="dsrc">"${r.fact_a_sentence.substring(0,130)}…"</div>`:''}
+      </div>
+      <div class="ddiv"><div class="dvs">vs</div></div>
+      <div class="dbox">
+        <div class="dlbl"><div class="ddot" style="background:var(--green)"></div>${r.doc_b}</div>
+        <div class="dtxt">${r.fact_b_text}</div>
+        ${bv?`<div class="dval">${bv}${r.fact_b_period?' · '+r.fact_b_period:''}</div>`:''}
+        ${r.fact_b_sentence?`<div class="dsrc">"${r.fact_b_sentence.substring(0,130)}…"</div>`:''}
+      </div>
+    </div>
+    <div class="rbox"><div class="rlbl">System reasoning</div>${r.reasoning}</div>
+  </div>`;
+}
+async function loadRels(){
+  const url=cRF?`${API}/relationships?rel_type=${cRF}`:`${API}/relationships`;
+  aR=await fetch(url).then(r=>r.json());
+  const el=document.getElementById('rc');
+  if(!aR.length){el.innerHTML=empty('🔗','No relationships','Upload PDFs on overlapping topics.');return}
+  el.innerHTML=`<div class="cnt">${aR.length} relationships</div>`+aR.map(relCard).join('');
+}
+function rf(type,btn){
+  cRF=type;
+  document.querySelectorAll('.fbar .chip').forEach(c=>c.classList.remove('on'));
+  btn.classList.add('on');
+  loadRels();
+}
+
+// FOUR CASES
+async function loadCases(){
+  const rels=await fetch(`${API}/relationships?limit=200`).then(r=>r.json());
+  const corr=rels.find(r=>r.relationship==='CORROBORATES');
+  const cont=rels.find(r=>r.relationship==='CONTRADICTS');
+  const rec=rels.find(r=>r.relationship==='RECONCILED');
+
+  function liveCase(rel){
+    if(!rel)return`<div class="evb"><div class="edoc">Upload overlapping documents to generate this case automatically.</div></div>`;
+    const av=[rel.fact_a_value,rel.fact_a_unit].filter(Boolean).join(' ');
+    const bv=[rel.fact_b_value,rel.fact_b_unit].filter(Boolean).join(' ');
+    return`<div class="evb">
+      <div class="erow"><div class="edoc">📄 ${rel.doc_a}</div><div class="efact">${rel.fact_a_text}</div>${av?`<div class="eval">${av}${rel.fact_a_period?' · '+rel.fact_a_period:''}</div>`:''}<div class="esrc">"${(rel.fact_a_sentence||'').substring(0,140)}…"</div></div>
+      <div class="esep"></div>
+      <div class="erow"><div class="edoc">📄 ${rel.doc_b}</div><div class="efact">${rel.fact_b_text}</div>${bv?`<div class="eval">${bv}${rel.fact_b_period?' · '+rel.fact_b_period:''}</div>`:''}<div class="esrc">"${(rel.fact_b_sentence||'').substring(0,140)}…"</div></div>
+      <div class="ereason">💬 ${rel.reasoning}</div>
+    </div>`;
+  }
+
+  document.getElementById('cg').innerHTML=`
+    <div class="ccard c1"><div class="cnum">Case 01</div><div class="ctitle">Fact Corroborated Across Documents</div><div class="cdesc">Same fact in multiple sources with different wording, units, or rounding - underlying claim matches.</div>${liveCase(corr)}</div>
+    <div class="ccard c2"><div class="cnum">Case 02</div><div class="ctitle">Genuine Contradiction</div><div class="cdesc">Conflicting claims about the same subject with no context that resolves the conflict.</div>${liveCase(cont)}</div>
+    <div class="ccard c3"><div class="cnum">Case 03</div><div class="ctitle">Apparent Contradiction - Explained by Context</div><div class="cdesc">Looks like a conflict but reconciled by time period, scope, units, or definition difference.</div>${liveCase(rec)}</div>
+    <div class="ccard c4"><div class="cnum">Case 04</div><div class="ctitle">Extraction Failure - Found and Documented</div><div class="cdesc">A real system limitation, how it was caught, and what would fix it.</div>
+      <div class="evb">
+        <div class="erow"><div class="edoc">Problem identified</div><div class="efact">Chart-embedded figures in slide PDFs</div><div class="esrc">Revenue values inside bar chart graphics extract as orphaned numbers like "8,142" with no column header context. The system creates a fact with type "other" and confidence 0.5 instead of linking it correctly to "FY24 revenue from services".</div></div>
+        <div class="esep"></div>
+        <div class="erow"><div class="edoc">Current mitigation</div><div class="esrc">Paragraph-level chunking preserves local context. Extraction prompt requires a full source sentence, so orphaned numbers with thin context get low confidence rather than a confident mislabel.</div></div>
+        <div class="ereason">✅ Fix: PyMuPDF page.find_tables() for structured data + a vision pass using multimodal API for chart graphics. Scoped for next iteration.</div>
+      </div>
+    </div>`;
+}
+
+function empty(i,h,p){return`<div class="empty"><div class="ei">${i}</div><h3>${h}</h3><p>${p}</p></div>`}
+
+refreshStats();
+setInterval(refreshStats,20000);
+</script>
+</body>
+</html>
