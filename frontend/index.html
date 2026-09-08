@@ -216,6 +216,9 @@ tbody tr:hover td{background:var(--blue-glow)}
 
   <div class="sfooter">
     <div class="sline"><span class="pdot"></span>API connected</div>
+    <button onclick="resetDB()" id="reset-btn" style="margin-top:10px;width:100%;padding:7px 12px;background:var(--red-dim);border:1px solid rgba(244,63,94,0.3);border-radius:7px;color:var(--red);font-size:0.75rem;font-family:var(--sans);cursor:pointer;">
+      🗑️ Reset All Data
+    </button>
   </div>
 </aside>
 
@@ -500,6 +503,22 @@ async function loadCases(){
 }
 
 function empty(i,h,p){return`<div class="empty"><div class="ei">${i}</div><h3>${h}</h3><p>${p}</p></div>`}
+
+async function resetDB(){
+  if(!confirm('Reset all data? Docs, Facts aur Relationships sab delete ho jayenge!'))return;
+  const btn=document.getElementById('reset-btn');
+  btn.textContent='Resetting...';btn.disabled=true;
+  try{
+    await fetch(`${API}/reset`,{method:'DELETE'});
+    aF=[];aR=[];aD=[];
+    refreshStats();
+    alert('Reset complete! Ab naye PDFs upload karo.');
+    btn.textContent='🗑️ Reset All Data';btn.disabled=false;
+  }catch(e){
+    alert('Reset failed: '+e.message);
+    btn.textContent='🗑️ Reset All Data';btn.disabled=false;
+  }
+}
 
 refreshStats();
 setInterval(refreshStats,20000);
